@@ -3,6 +3,7 @@ package handler
 import (
 	"bulk-email-platform/pkg/excel"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,6 +20,20 @@ type UploadHandler struct {
 // Constuctor
 func NewUploadHandler() *UploadHandler {
 	return &UploadHandler{}
+}
+
+type UploadResponse struct {
+	Message     string              `json:"message"`
+	FileName    string              `json:"fileName"`
+	ValidRows   int                 `json:"validRows"`
+	InvalidRows int                 `json:"invalidRows"`
+	ValidData   []map[string]string `json:"validData"`
+	InvalidData []InvalidRow        `json:"invalidData"`
+}
+
+type InvalidRow struct {
+	RowNumber string `json:"rowNumber"`
+	Errors    string `json:"errors"`
 }
 
 func (h *UploadHandler) Handle(c *gin.Context) {
@@ -46,7 +61,7 @@ func (h *UploadHandler) Handle(c *gin.Context) {
 
 	defer os.Remove(tempPath)
 
-	parser := &excel.Parser{}
+	parser := excel.NewParser()
 
 	validRows, invalidRows, err := parser.ParseFile(tempPath)
 	if err != nil {
@@ -54,52 +69,51 @@ func (h *UploadHandler) Handle(c *gin.Context) {
 		return
 	}
 
+	// Log results
 	fmt.Println("====== Excel Parsing Result =======")
 	fmt.Println("File: ", file.Filename)
 	fmt.Println("Total rows found: ", len(validRows)+len(invalidRows))
 	fmt.Println("Valid Rows: ", len(validRows))
 	fmt.Println("Invalid Rows: ", len(invalidRows))
-
 	fmt.Printf("============================\n\n")
 
-	for i, row := range validRows {
+	// prepare for invalid rows
+	invalidData := make([]InvalidRow, 0, len(invalidRows))
+	for _, invalid := range invalidRows {
 
-		fmt.Printf("=== Row %d (Excel Row %s) ===\n", i+1, row["_row_number"])
+		cleanFormat := make(map[string]string)
+		for k, v := range invalid {
+			switch k {
+			case "_row_number":
+				cleanFormat[k] = v
 
-		for key, value := range row {
-
-			if key == "_row_number" {
-				fmt.Printf("  📍 Row %s\n", value)
-			} else {
-				fmt.Printf("  %s: %q\n", key, value)
-
+			case "_errors":
+				cleanFormat[k] = v
 			}
-
+			invalidData = append(invalidData, InvalidRow{RowNumber: cleanFormat["_row_number"], Errors: cleanFormat["_errors"]})
 		}
-		fmt.Printf("============================\n\n")
-
+		fmt.Printf("  📍 Excel Row %s: %s\n", invalid["_row_number"], invalid["_errors"])
 	}
 
-	fmt.Printf("============================\n\n")
+	// prepare for valid rows
+	validData := make([]map[string]string, 0, len(validRows))
+	for _, valid := range validRows {
 
-	if len(invalidRows) > 0 {
-		fmt.Printf("❌ Invalid rows:\n")
-		for _, invalid := range invalidRows {
-			fmt.Printf("  📍 Excel Row %s: %s\n",
-				invalid["_row_number"],
-				invalid["_errors"])
-		}
-		fmt.Println()
+		cleanFormat := maps.Clone(valid)
+		cleanFormat["_row_number"] = valid["_row_number"]
+		validData = append(validData, cleanFormat)
 	}
 
-	fmt.Printf("============================\n\n")
+	response := UploadResponse{
+		Message:     "file processed successfully",
+		FileName:    file.Filename,
+		ValidRows:   len(validRows),
+		InvalidRows: len(invalidRows),
+		ValidData:   validData,
+		InvalidData: invalidData,
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":         "file processed successfully",
-		"filename":        file.Filename,
-		"valid_rows":      len(validRows),
-		"invalid_rows":    len(invalidRows),
-		"valid_preview":   validRows[:min(3, len(validRows))],
-		"invalid_preview": invalidRows[:min(3, len(invalidRows))],
-	})
+	// Dont forget to add "file Attachments" in the mail
+
+	c.JSON(http.StatusOK, response)
 }

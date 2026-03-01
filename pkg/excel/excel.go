@@ -10,6 +10,10 @@ import (
 
 type Parser struct{}
 
+func NewParser() *Parser {
+	return &Parser{}
+}
+
 func (p *Parser) ParseFile(fileName string) ([]map[string]string, []map[string]string, error) {
 
 	file, err := excelize.OpenFile(fileName)
@@ -66,9 +70,10 @@ func (p *Parser) ParseFile(fileName string) ([]map[string]string, []map[string]s
 				if headers[idx] == "to" || headers[idx] == "from" {
 					normalized, isValid := validator.ValidateEmail(value)
 					value = normalized
-					if !isValid && value == "" {
+
+					if !isValid || value == "" {
 						rowData["_is_valid"] = "false"
-						rowData["_errors"] += "invalid" + headers[idx] + "email; "
+						rowData["_errors"] += `invalid "` + headers[idx] + `" email; `
 					}
 
 				} else {
@@ -79,20 +84,6 @@ func (p *Parser) ParseFile(fileName string) ([]map[string]string, []map[string]s
 					rowData[headers[idx]] = value
 				}
 			}
-		}
-
-		// check for "to" & "from"
-		to, hasTo := rowData["to"]
-		from, hasFrom := rowData["from"]
-
-		if to == "" || !hasTo {
-			rowData["_is_valid"] = "false"
-			rowData["_errors"] += "missing 'to' email; "
-		}
-
-		if from == "" || !hasFrom {
-			rowData["_is_valid"] = "false"
-			rowData["_errors"] += "missing 'from' email; "
 		}
 
 		if rowData["_is_valid"] == "true" {

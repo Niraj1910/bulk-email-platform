@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,4}$`)
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$`)
 var cleanEmailRegex = regexp.MustCompile(`[^a-zA-Z0-9.@_%+-]`)
 
 func IsEmailValid(email string) bool {
@@ -31,5 +31,5 @@ func NormalizeEmail(email string) string {
 
 func ValidateEmail(email string) (string, bool) {
 	normalized := NormalizeEmail(email)
-	return normalized, IsEmailValid(email)
+	return normalized, IsEmailValid(normalized)
 }

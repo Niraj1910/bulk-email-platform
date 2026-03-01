@@ -1,6 +1,8 @@
 
-./tmp
+tmp*
 
 ./uploads
 
-./test* .xlsx
+test*.xlsx
+
+./env
