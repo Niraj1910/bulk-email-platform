@@ -160,6 +160,7 @@ func (c *GroqClient) extractManually(content string) (string, string, error) {
 	}
 
 	if subject != "" && message != "" {
+		fmt.Println("Gettin 'subject and message' from the extractManually()")
 		return subject, message, nil
 	}
 

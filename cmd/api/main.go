@@ -27,6 +27,7 @@ func main() {
 
 	uploadhandler := handler.NewUploadHandler()
 	llmHandler := handler.NewLLMHandler(groqKey)
+	emailHandler := handler.NewEmailHandler()
 
 	r.GET("/health", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -38,6 +39,11 @@ func main() {
 	{
 		llmRoutes.POST("/generate", llmHandler.Generate)
 		llmRoutes.GET("/health", llmHandler.Health)
+	}
+	emailRoutes := r.Group("/api/email")
+	{
+		emailRoutes.POST("/send", emailHandler.SendSingle)
+		emailRoutes.POST("/send-batch", emailHandler.SendBatch)
 	}
 
 	r.Run(":8080")
