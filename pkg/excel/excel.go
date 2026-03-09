@@ -14,28 +14,28 @@ func NewParser() *Parser {
 	return &Parser{}
 }
 
-func (p *Parser) ParseFile(fileName string) ([]map[string]string, []map[string]string, error) {
+func (p *Parser) ParseFile(fileName string) ([]string, []map[string]string, []map[string]string, error) {
 
 	file, err := excelize.OpenFile(fileName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to open excel file: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to open excel file: %w", err)
 	}
 
 	defer file.Close()
 
 	sheets := file.GetSheetList()
 	if len(sheets) == 0 {
-		return nil, nil, fmt.Errorf("no sheets found in the excel file")
+		return nil, nil, nil, fmt.Errorf("no sheets found in the excel file")
 	}
 
 	firstSheet := sheets[0]
 	rows, err := file.GetRows(firstSheet)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read rows: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to read rows: %w", err)
 	}
 
 	if len(rows) < 2 {
-		return []map[string]string{}, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	// process headers - skip empty ones and clean them
@@ -95,5 +95,5 @@ func (p *Parser) ParseFile(fileName string) ([]map[string]string, []map[string]s
 		}
 	}
 
-	return validRows, invalidRows, nil
+	return headers, validRows, invalidRows, nil
 }

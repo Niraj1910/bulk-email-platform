@@ -32,7 +32,7 @@ CREATE TABLE file_columns (
     column_name TEXT NOT NULL,
     column_index INTEGER NOT NULL,
     is_email_column BOOLEAN DEFAULT false,
-    is_required BOOLEAN DEFAULT false
+    is_required BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE(file_id, column_index)
 );
